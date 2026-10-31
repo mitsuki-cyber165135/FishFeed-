@@ -1,0 +1,20 @@
+# ============================================================
+#  File yang TIDAK di-deploy ke Vercel
+#  Hanya dashboard + simulator yang perlu publik.
+# ============================================================
+
+# Materi & dokumen
+*.pdf
+*.pptx
+*.md
+updated (1).txt
+
+# Firmware (jangan ikut publik)
+feeder/
+
+# Versi lama / tidak dipakai
+index (3).html
+index (file lama).html
+app.js
+style.css
+extra.css

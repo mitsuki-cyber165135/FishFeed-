@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fish Feeder | Monitoring Dashboard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="extra.css">
+</head>
+<body>
+<div class="container">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-top">
+    <div class="brand">
+      <div class="brand-icon"><span class="material-symbols-outlined">set_meal</span></div>
+      <div><h2>Fish<span>Feed</span></h2><small>Smart Feeder</small></div>
+    </div>
+  </div>
+
+  <nav class="sidebar-menu">
+    <a href="#overview" data-view="overview" class="active"><span class="material-symbols-outlined">dashboard</span><h3>Overview</h3></a>
+    <a href="#jadwal" data-view="jadwal"><span class="material-symbols-outlined">schedule</span><h3>Jadwal Pakan</h3></a>
+    <a href="#histori" data-view="histori"><span class="material-symbols-outlined">history</span><h3>Histori</h3></a>
+    <a href="#cli" data-view="cli"><span class="material-symbols-outlined">terminal</span><h3>Web-CLI</h3></a>
+    <a href="#preferensi" data-view="preferensi"><span class="material-symbols-outlined">tune</span><h3>Preferensi</h3></a>
+    <a href="#pengaturan" data-view="pengaturan"><span class="material-symbols-outlined">settings</span><h3>Pengaturan</h3></a>
+  </nav>
+
+  <div class="device-status">
+    <div class="status-header"><span class="material-symbols-outlined">router</span><span>Device Status</span></div>
+    <div class="device-online">
+      <span class="status-dot"></span>
+      <div><strong>ESP32 Online</strong><small>Connected</small></div>
+    </div>
+    <div class="device-info">
+      <div><span>Load Cell</span><strong>HX711</strong></div>
+      <div><span>Motor</span><strong>NEMA 17</strong></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main>
+  <header class="header">
+    <div class="header-left">
+      <button class="menu-btn"><span class="material-symbols-outlined">menu</span></button>
+      <div>
+        <p class="eyebrow">AQUACULTURE CONTROL SYSTEM</p>
+        <h1>Fish Feeder Dashboard</h1>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="connection"><span class="status-dot"></span><span>Online</span></div>
+      <button class="theme-toggle" id="themeToggle" title="Ganti tema"><span class="material-symbols-outlined">dark_mode</span></button>
+
+      <!-- Notifikasi (dropdown saat hover) -->
+      <div class="dropdown notification" id="notifDD">
+        <button class="icon-btn bare" aria-label="Notifikasi">
+          <span class="material-symbols-outlined">notifications</span>
+          <span class="notification-dot" id="notifDot"></span>
+        </button>
+        <div class="dd-menu">
+          <div class="dd-card">
+            <div class="dd-head"><div><strong>Notifikasi</strong><br><small id="notifCount"></small></div>
+              <button class="btn sm" data-act="read-all">Tandai dibaca</button></div>
+            <div class="nt-list" id="notifList"></div>
+            <div class="dd-foot"><button class="btn sm" data-act="go" data-v="histori">Lihat histori</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Akun (dropdown saat hover) -->
+      <div class="profile dropdown" id="accDD">
+        <div class="profile-photo"><span class="material-symbols-outlined">person</span></div>
+        <div class="profile-info"><strong>Saya</strong><small>Fish Farm</small></div>
+        <div class="dd-menu">
+          <div class="dd-card small">
+            <div class="dd-user"><div class="profile-photo"><span class="material-symbols-outlined">person</span></div>
+              <div><strong id="ddName">Saya</strong><small id="ddFarm">Fish Farm</small></div></div>
+            <button class="dd-item" data-act="profile"><span class="material-symbols-outlined">account_circle</span>Profil Saya</button>
+            <button class="dd-item" data-act="go" data-v="preferensi"><span class="material-symbols-outlined">tune</span>Preferensi</button>
+            <button class="dd-item" data-act="go" data-v="pengaturan"><span class="material-symbols-outlined">settings</span>Pengaturan</button>
+            <button class="dd-item" data-act="help"><span class="material-symbols-outlined">help</span>Bantuan</button>
+            <div class="dd-sep"></div>
+            <button class="dd-item danger" data-act="logout"><span class="material-symbols-outlined">logout</span>Keluar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= OVERVIEW ================= -->
+  <div class="view active" id="view-overview">
+
+    <section class="system-overview">
+      <div>
+        <p class="section-label">SYSTEM OVERVIEW</p>
+        <h2>Monitoring &amp; Control</h2>
+        <p class="section-description">Pantau ketersediaan pakan dan kendalikan pemberian pakan secara otomatis maupun manual.</p>
+      </div>
+      <div class="last-update">
+        <span class="material-symbols-outlined">sync</span>
+        <div><small>Last synchronization</small><strong>--</strong></div>
+      </div>
+    </section>
+
+    <section class="monitor-grid">
+      <div class="monitor-card feed-stock">
+        <div class="card-header">
+          <div><span class="card-label">FEED AVAILABLE</span><h3>Persediaan Pakan</h3></div>
+          <div class="card-icon green"><span class="material-symbols-outlined">scale</span></div>
+        </div>
+        <div class="stock-content">
+          <div class="stock-number"><strong>1.28</strong><span>kg</span></div>
+          <div class="stock-bar"><div class="stock-bar-fill"></div></div>
+          <div class="stock-details"><span>Kapasitas box</span><strong>2.00 kg</strong></div>
+        </div>
+        <div class="stock-status"><span class="status-dot"></span>Feed level normal</div>
+      </div>
+
+      <div class="monitor-card next-feeding">
+        <div class="card-header">
+          <div><span class="card-label">NEXT FEEDING</span><h3>Pemberian Berikutnya</h3></div>
+          <div class="card-icon blue"><span class="material-symbols-outlined">schedule</span></div>
+        </div>
+        <div class="next-time"><strong>--:--</strong><span></span></div>
+        <div class="feeding-info">
+          <div><span class="material-symbols-outlined">restaurant</span><div><small>Porsi</small><strong>-- g</strong></div></div>
+          <div><span class="material-symbols-outlined">autorenew</span><div><small>Mode</small><strong>Automatic</strong></div></div>
+        </div>
+        <div class="countdown"><span>Feeding in</span><strong>00:00:00</strong></div>
+      </div>
+
+      <div class="monitor-card daily-summary">
+        <div class="card-header">
+          <div><span class="card-label">TODAY</span><h3>Ringkasan Pakan</h3></div>
+          <div class="card-icon orange"><span class="material-symbols-outlined">analytics</span></div>
+        </div>
+        <div class="daily-number"><strong>0</strong><span>gram</span></div>
+        <div class="daily-progress">
+          <div class="progress-top"><span>Target harian</span><strong>0 / 480 g</strong></div>
+          <div class="progress-track"><div class="progress-fill"></div></div>
+        </div>
+        <div class="daily-meta"><span>0 dari 0 sesi</span><span class="success">0%</span></div>
+      </div>
+    </section>
+
+    <section class="control-grid">
+      <div class="panel manual-control">
+        <div class="panel-header">
+          <div><span class="section-label">MANUAL CONTROL</span><h2>Beri Pakan Sekarang</h2></div>
+          <span class="material-symbols-outlined panel-header-icon">touch_app</span>
+        </div>
+        <p class="panel-description">Tentukan berat pakan yang ingin dikeluarkan oleh feeder. Sistem akan menimbang pakan menggunakan Load Cell sebelum proses selesai.</p>
+        <div class="manual-weight">
+          <div class="weight-display"><strong>100</strong><span>gram</span></div>
+          <div class="range-value"><span>10 g</span><span>250 g</span></div>
+          <input type="range" min="10" max="250" value="100" class="feed-slider">
+        </div>
+        <div class="manual-warning">
+          <span class="material-symbols-outlined">info</span>
+          <p>Pemberian manual akan dicatat sebagai <strong>manual feeding</strong> pada histori sistem.</p>
+        </div>
+        <button class="feed-button"><span class="material-symbols-outlined">restaurant</span>Beri Pakan Sekarang</button>
+      </div>
+
+      <div class="panel schedule-panel">
+        <div class="panel-header">
+          <div><span class="section-label">FEEDING SCHEDULE</span><h2>Jadwal Hari Ini</h2></div>
+          <button class="small-action" data-act="go" data-v="jadwal"><span class="material-symbols-outlined">edit</span>Edit</button>
+        </div>
+        <div class="schedule-list" id="todaySchedule"></div>
+      </div>
+    </section>
+
+    <section class="panel history-panel">
+      <div class="panel-header">
+        <div><span class="section-label">FEEDING HISTORY</span><h2>Histori Pemberian Pakan</h2></div>
+        <button class="small-action" data-act="go" data-v="histori">Lihat Semua<span class="material-symbols-outlined">arrow_forward</span></button>
+      </div>
+      <div class="history-table-container">
+        <table class="history-table">
+          <thead><tr><th>Waktu</th><th>Berat</th><th>Mode</th><th>Target</th><th>Aktual</th><th>Status</th></tr></thead>
+          <tbody id="recentBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- Halaman lain dirender oleh app.js -->
+  <div class="view" id="view-jadwal"></div>
+  <div class="view" id="view-histori"></div>
+  <div class="view" id="view-cli"></div>
+  <div class="view" id="view-preferensi"></div>
+  <div class="view" id="view-pengaturan"></div>
+</main>
+
+<!-- RIGHT PANEL -->
+<aside class="right-panel">
+
+  <section class="side-section">
+    <div class="side-heading">
+      <div><span class="section-label">FARM PROFILE</span><h2>Profil Budidaya</h2></div>
+      <button class="icon-btn" data-act="go" data-v="preferensi" title="Ubah preferensi"><span class="material-symbols-outlined">edit</span></button>
+    </div>
+    <div class="farm-profile">
+      <div class="fish-icon"><span class="material-symbols-outlined">set_meal</span></div>
+      <div class="farm-data"><strong id="farmTitle">Tilapia Grow-out</strong><span id="farmSystem">Freshwater pond</span></div>
+    </div>
+    <div class="profile-grid" id="profileGrid"></div>
+  </section>
+
+  <section class="side-section recommendation-section">
+    <div class="side-heading">
+      <div><span class="section-label">SMART RECOMMENDATION</span><h2>Tips &amp; Insight</h2></div>
+    </div>
+    <div id="recoBox"></div>
+  </section>
+
+  <section class="side-section">
+    <div class="side-heading">
+      <div><span class="section-label">SYSTEM HEALTH</span><h2>Status Perangkat</h2></div>
+    </div>
+    <div class="health-list">
+      <div class="health-item"><div class="health-name"><span class="material-symbols-outlined">scale</span><span>Load Cell</span></div><span class="health-good">Normal</span></div>
+      <div class="health-item"><div class="health-name"><span class="material-symbols-outlined">memory</span><span>HX711</span></div><span class="health-good">Normal</span></div>
+      <div class="health-item"><div class="health-name"><span class="material-symbols-outlined">rotate_right</span><span>Stepper Motor</span></div><span class="health-good">Ready</span></div>
+      <div class="health-item"><div class="health-name"><span class="material-symbols-outlined">wifi</span><span>Network</span></div><span class="health-good">Connected</span></div>
+    </div>
+  </section>
+
+</aside>
+</div>
+
+<script src="app.js" defer></script>
+</body>
+</html>

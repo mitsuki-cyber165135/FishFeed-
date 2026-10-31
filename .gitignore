@@ -1,0 +1,54 @@
+# ============================================================
+#  FishFeed — file yang TIDAK masuk repo Git
+#  (Berbeda dengan .vercelignore: ini untuk Git, bukan deploy.)
+# ============================================================
+
+# ---------- Kredensial / rahasia ----------
+# Firmware menyimpan SSID & password WiFi di feeder/src/feeder.ino.
+# Pindahkan ke feeder/src/secrets.h, lalu file itu diabaikan di sini.
+feeder/src/secrets.h
+.env
+.env.*
+!.env.example
+
+# ---------- Log & cache lokal ----------
+chrome_err.log
+*.log
+*.tmp
+
+# ---------- Editor / OS ----------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- Build artifact PlatformIO ----------
+.pio/
+feeder/.pio/
+.pioenvs/
+.piolibdeps/
+*.elf
+*.bin
+*.map
+
+# ---------- Node / Vercel (kalau nanti dipakai) ----------
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.vercel/
+.next/
+dist/
+build/
+
+# ============================================================
+#  OPSIONAL — file lama / arsip
+#  Hapus tanda # di depan bila Anda ingin TETAP menyimpannya di repo.
+# ============================================================
+#index (file lama).html
+#updated (1).txt
+#app.js
+#style.css
+#extra.css
+#Presentasi Pekan 9.pdf
+#Presentasi Pekan 9.pptx

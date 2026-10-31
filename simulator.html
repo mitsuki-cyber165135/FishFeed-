@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulator ESP32 · FishFeed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"></script>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Inter", system-ui, sans-serif; color: #e8f2f5; font-size: 14px;
+    min-height: 100vh; background: radial-gradient(900px 400px at 100% 0%, rgba(34,211,238,.08), transparent 60%), #0a1116;
+    display: grid; place-items: center; padding: 24px;
+  }
+  .wrap { width: min(520px, 100%); display: grid; gap: 14px; }
+  header { display: flex; align-items: center; gap: 12px; }
+  .mark { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(135deg,#22d3ee,#10b981); color:#06232b; font-size: 22px; }
+  header h1 { font-size: 18px; font-weight: 800; }
+  header p { font-size: 12px; color: #68818b; }
+  .card { background: #101b22; border: 1px solid rgba(151,182,193,.12); border-radius: 16px; padding: 18px; }
+  .pill { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; padding: 4px 11px; border-radius: 999px; }
+  .pill .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .pill.ok { color:#34d399; background: rgba(52,211,153,.14); } .pill.ok .dot { background:#34d399; }
+  .pill.bad { color:#fb7185; background: rgba(251,113,133,.14); } .pill.bad .dot { background:#fb7185; }
+  .pill.warn { color:#fbbf24; background: rgba(251,191,36,.14); } .pill.warn .dot { background:#fbbf24; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 12px; font-weight: 600; color: #a5bbc3; }
+  input {
+    height: 40px; padding: 0 12px; border-radius: 10px; font-size: 13.5px;
+    background: #0d171d; border: 1px solid rgba(151,182,193,.14); color: #e8f2f5; outline: none; width: 100%;
+  }
+  input:focus { border-color: #22d3ee; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 40px; padding: 0 16px;
+    border-radius: 11px; font-size: 13px; font-weight: 600; border: 1px solid rgba(151,182,193,.14); background: #16232b; color: #e8f2f5; cursor: pointer;
+  }
+  .btn:hover { border-color: rgba(151,182,193,.3); }
+  .btn.primary { background: linear-gradient(135deg,#22d3ee,#10b981); color:#06232b; border:none; }
+  .btn.block { width: 100%; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .term { border-radius: 14px; overflow: hidden; border: 1px solid rgba(151,182,193,.14); background:#04080b; font-family:"JetBrains Mono",monospace; }
+  .term-bar { padding: 10px 14px; background:#0a1217; border-bottom:1px solid #12202a; color:#6b8796; font-size:12px; }
+  .term-out { height: 200px; overflow-y:auto; padding: 14px; font-size: 12.5px; line-height: 1.7; color:#cfe4ec; white-space:pre-wrap; }
+  .term-out .err { color:#fb7185; } .term-out .ok { color:#34d399; } .term-out .cmd { color:#7dd3fc; } .term-out .dim { color:#68838f; }
+  .hint { font-size: 12px; color: #68818b; line-height: 1.6; }
+  .hint b { color:#a5bbc3; }
+  .kbd { font-family:"JetBrains Mono",monospace; background:#16232b; border:1px solid rgba(151,182,193,.14); padding:1px 6px; border-radius:6px; font-size:11px; }
+  /* login gate */
+  .login { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; background: radial-gradient(900px 400px at 100% 0%, rgba(34,211,238,.08), transparent 60%), #0a1116; }
+  .login-card { width: min(360px, 100%); background:#101b22; border:1px solid rgba(151,182,193,.12); border-radius:16px; padding:28px 24px; display:grid; gap:16px; }
+  .login-card .mark { font-size:24px; }
+  .login-title { font-size:18px; font-weight:800; }
+  .login-title span { color:#22d3ee; }
+  .login-sub { font-size:12px; color:#68818b; margin-top:-10px; }
+  .login form { display:grid; gap:12px; }
+  .login-err { font-size:12px; color:#fb7185; }
+</style>
+</head>
+<body>
+<!-- Layar login (gate client-side — bukan keamanan beneran) -->
+<div class="login" id="login">
+  <div class="login-card">
+    <div class="mark">⚙</div>
+    <div class="login-title">Simulator <span>ESP32</span></div>
+    <p class="login-sub">Masuk untuk mengakses simulator</p>
+    <form id="loginForm" novalidate>
+      <div class="field"><label>Username</label><input id="loginUser" type="text" autocomplete="username" placeholder="Username kelompok" required></div>
+      <div class="field"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••" required></div>
+      <p class="login-err" id="loginErr" hidden>Username atau password salah.</p>
+      <button class="btn primary block" type="submit">Masuk</button>
+    </form>
+  </div>
+</div>
+<div class="wrap">
+  <header>
+    <div class="mark">⚙</div>
+    <div><h1>Simulator ESP32 · FishFeed</h1><p>Mensimulasikan feeder: publish <b>status</b>, jawab perintah <b>feed/schedule</b>.</p></div>
+  </header>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <strong style="font-size:14px">Konfigurasi</strong>
+      <span class="pill warn" id="statePill"><span class="dot"></span><span id="stateTxt">Terputus</span></span>
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Broker (WSS)</label>
+      <input id="broker" value="wss://broker.emqx.io:8084/mqtt" spellcheck="false">
+    </div>
+    <div class="row">
+      <div class="field"><label>ID perangkat</label><input id="deviceId" value="demo-01" spellcheck="false"></div>
+      <div class="field"><label>Stok pakan (kg)</label><input id="weight" type="number" step="0.05" value="1.28"></div>
+    </div>
+    <button class="btn primary block" id="connectBtn" style="margin-top:14px">Hubungkan</button>
+  </div>
+
+  <div class="card">
+    <strong style="font-size:14px">Simulasi perangkat</strong>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn" id="feedBtn">Beri pakan 100 g</button>
+      <button class="btn" id="onlineBtn">Offline</button>
+      <button class="btn" id="refillBtn">Isi ulang 2 kg</button>
+    </div>
+    <p class="hint" style="margin-top:12px">Buka <b>index.html</b> di tab lain, aktifkan <b>Mode realtime (MQTT)</b> dengan broker &amp; ID yang sama, lalu tekan <b>Beri Pakan Sekarang</b> — data akan mengalir lewat broker.</p>
+  </div>
+
+  <div class="term">
+    <div class="term-bar">esp32@fishfeed ~ log</div>
+    <div class="term-out" id="log"></div>
+  </div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+let client = null, connected = false, online = true, motorState = "idle";
+let weight = 1.28, rssi = -58, schedule = [], heartbeat = null, seq = 0;
+let deviceId = "demo-01";
+
+const topic = (suffix) => `feeder/${deviceId}/${suffix}`;
+const statusTopic = () => topic("status"), eventTopic = () => topic("event"),
+      cmdTopic = () => topic("cmd"), replyTopic = () => topic("cmd/reply"), scheduleTopic = () => topic("schedule");
+
+function log(msg, cls = "") {
+  const o = $("#log"), d = document.createElement("div");
+  d.className = cls; d.textContent = `[${new Date().toLocaleTimeString("id-ID")}] ${msg}`;
+  o.append(d); o.scrollTop = o.scrollHeight;
+}
+function setState(txt, cls) { $("#stateTxt").textContent = txt; $("#statePill").className = "pill " + (cls || "warn"); }
+function updateBtn() { $("#connectBtn").textContent = connected ? "Putuskan" : "Hubungkan"; }
+function publish(topic, payload, opts = {}) { if (client && connected) client.publish(topic, JSON.stringify(payload), { qos: 1, ...opts }); }
+function statusMsg() { return { online, weight_kg: +weight.toFixed(4), motor: motorState, rssi, ts: Date.now() }; }
+function publishStatus() { publish(statusTopic(), statusMsg(), { retain: true }); }
+
+function connect() {
+  disconnect();
+  deviceId = $("#deviceId").value.trim() || "demo-01";
+  weight = +$("#weight").value || 0;
+  const opts = {
+    clientId: "esp32-sim-" + deviceId, keepalive: 30, clean: true, reconnectPeriod: 3000,
+    will: { topic: statusTopic(), payload: JSON.stringify({ online: false, weight_kg: weight, rssi, ts: Date.now() }), qos: 1, retain: true },
+  };
+  setState("Menghubungkan…", "warn");
+  client = mqtt.connect($("#broker").value.trim(), opts);
+  client.on("connect", () => {
+    connected = true; online = true;
+    setState("Terhubung", "ok"); log("Terhubung ke broker · topik " + cmdTopic(), "ok");
+    client.subscribe(cmdTopic());
+    publishStatus(); startHeartbeat(); updateBtn();
+  });
+  client.on("message", (t, p) => { if (t === cmdTopic()) onCmd(JSON.parse(p.toString())); });
+  client.on("error", (e) => log("Error: " + (e.message || e), "err"));
+  client.on("close", () => { connected = false; stopHeartbeat(); setState("Terputus", "bad"); log("Terputus dari broker", "err"); updateBtn(); });
+}
+function disconnect() { stopHeartbeat(); if (client) { try { client.end(true); } catch (e) {} client = null; } connected = false; setState("Terputus", "bad"); updateBtn(); }
+function startHeartbeat() { stopHeartbeat(); heartbeat = setInterval(() => { if (online) { rssi = -55 - Math.floor(Math.random() * 10); publishStatus(); } }, 3000); }
+function stopHeartbeat() { if (heartbeat) clearInterval(heartbeat); heartbeat = null; }
+
+function genSamples(target, actual) { const n = 8, a = []; for (let i = 1; i <= n; i++) a.push({ t: i, w: +(Math.min(actual, target * i / n)).toFixed(1) }); return a; }
+
+function doFeed(msg) {
+  const target = +msg.weight || 100;
+  log("Perintah feed: " + target + " g — menimbang…", "cmd");
+  motorState = "running"; publishStatus();
+  setTimeout(() => {
+    const actual = +(target + (Math.random() * 4 - 2)).toFixed(1);
+    weight = Math.max(0, +(weight - actual / 1000).toFixed(4));
+    motorState = "idle";
+    publish(eventTopic(), { id: msg.id, ts: Date.now(), mode: "manual", target, actual, status: "ok", duration: Math.round(2 + Math.random() * 3), stock_after: weight, samples: genSamples(target, actual) });
+    publish(replyTopic(), { id: msg.id, ok: true, message: "OK" });
+    publishStatus();
+    log(`Selesai: ${actual.toFixed(1)} g (target ${target} g) · sisa ${weight.toFixed(3)} kg`, "ok");
+  }, 2200);
+}
+function onCmd(msg) {
+  log("cmd <- " + JSON.stringify(msg), "cmd");
+  switch (msg.cmd) {
+    case "feed": doFeed(msg); break;
+    case "stop": motorState = "idle"; publish(replyTopic(), { id: msg.id, ok: true, message: "Motor dihentikan" }); publishStatus(); log("Motor dihentikan", "ok"); break;
+    case "tare": publish(replyTopic(), { id: msg.id, ok: true, message: "Tare OK" }); log("Tare dilakukan (timbangan dinolkan)", "ok"); break;
+    case "calibrate": publish(replyTopic(), { id: msg.id, ok: true, message: "Kalibrasi " + msg.mass + " g OK" }); log("Kalibrasi massa acuan " + msg.mass + " g", "ok"); break;
+    case "schedule_set":
+      schedule = msg.schedule || [];
+      publish(scheduleTopic(), schedule, { retain: true });
+      publish(replyTopic(), { id: msg.id, ok: true, message: "Jadwal tersimpan" });
+      log("Jadwal disimpan: " + schedule.length + " sesi", "ok");
+      break;
+    default: publish(replyTopic(), { id: msg.id, ok: false, message: "Perintah tidak dikenal" }); log("Perintah tidak dikenal: " + msg.cmd, "err");
+  }
+}
+
+$("#connectBtn").onclick = () => { connected ? disconnect() : connect(); };
+$("#feedBtn").onclick = () => { if (!connected) return log("Belum terhubung", "err"); doFeed({ id: "sim-" + Date.now() + "-" + (++seq), weight: 100 }); };
+$("#onlineBtn").onclick = () => { online = !online; publishStatus(); log(online ? "Perangkat online" : "Perangkat OFFLINE (simulasi terputus)", online ? "ok" : "err"); $("#onlineBtn").textContent = online ? "Offline" : "Online"; };
+$("#refillBtn").onclick = () => { weight = 2; publishStatus(); log("Hopper diisi ulang menjadi 2 kg", "ok"); };
+
+// ============ Login gate (client-side — bukan keamanan beneran) ============
+// GANTI USERNAME & PASSWORD DI SINI — harus SAMA dengan di script.js (index.html).
+// Catatan: kredensial bisa dibaca lewat View Source / F12, hanya menghalau orang iseng.
+const AUTH_USER = "kelompok4paralel2";
+const AUTH_PASS = "fishfeedsibi";
+const AUTH_KEY = "fishfeed-auth";
+
+function isAuthed() { try { return localStorage.getItem(AUTH_KEY) === "1"; } catch (e) { return false; } }
+if (isAuthed()) $("#login").style.display = "none";
+
+$("#loginForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const u = $("#loginUser").value.trim();
+  const p = $("#loginPass").value;
+  if (u === AUTH_USER && p === AUTH_PASS) {
+    try { localStorage.setItem(AUTH_KEY, "1"); } catch (e) {}
+    $("#login").style.display = "none";
+    $("#loginErr").hidden = true;
+    $("#loginForm").reset();
+  } else {
+    $("#loginErr").hidden = false;
+    $("#loginPass").value = "";
+    $("#loginPass").focus();
+  }
+});
+</script>
+</body>
+</html>

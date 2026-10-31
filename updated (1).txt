@@ -1,0 +1,75 @@
+Yang sudah jadi (sesuai PRD)
+
+  - Overview — persediaan pakan + bilah progres + lencana status, kartu gradien "Pemberian Berikutnya" dengan hitung
+    mundur live, ringkasan pakan hari ini, kontrol manual (slider + input), jadwal hari ini, histori ringkas.
+  - Pop up interaktif — konfirmasi pemberian (porsi/durasi/sisa stok) → dialog progres dengan cincin SVG live + tombol
+    Stop Darurat → centang selesai → toast. Dialog tambah/edit/hapus jadwal dengan validasi inline.
+  - Command palette (Ctrl+K) — pindah halaman, beri pakan, tambah jadwal, ekspor CSV, toggle offline.
+  - Web-CLI — terminal monospace dengan feed, schedule, status, tare, calibrate (konfirmasi), stop, help, riwayat panah
+    atas/bawah, autocomplete Tab, output berwarna.
+  - Histori — tabel + filter (mode/rentang/status) + grafik SVG Target vs Aktual dan Total per Hari, klik baris → panel
+    samping detail (durasi motor, sampel load cell), ekspor CSV.
+  - Pengaturan — profil perangkat & budidaya, batas pakan, notifikasi, tema (gelap/terang/ikuti perangkat), simulasi
+    offline, reset data.
+  - Status & keselamatan — banner offline + tombol aksi dinonaktifkan, banner stok menipis, peringatan melewati target,
+    panel kesehatan perangkat (Load Cell/HX711/Motor/Jaringan/RSSI), dan dukungan prefers-reduced-motion.
+
+ Yang saya tambahkan
+
+  1. Adapter MQTT.js di dashboard (script.js + index.html)
+  - Toggle "Mode realtime (MQTT)" di Pengaturan → MQTT & Realtime, lengkap dengan field Broker WSS, ID perangkat,
+    username/password, dan indikator status koneksi.
+  - Saat mode OFF → dashboard tetap jalan lokal (simulasi) seperti sebelumnya, tidak ada yang rusak.
+  - Saat mode ON → dashboard subscribe ke topik status / event / cmd/reply / schedule, dan publish perintah ke cmd.
+  - Status perangkat (online/offline) kini otomatis dari koneksi broker + pesan status (Last Will), bukan toggle manual.
+
+  2. simulator.html (baru) — "ESP32 palsu" berbasis browser, tanpa npm/Node. Ia publish status tiap 3 detik, membalas
+  perintah feed/stop/tare/calibrate/schedule_set, dan mendukung tombol "Beri pakan 100 g", "Offline", dan "Isi ulang".
+
+  Cara mencoba (2 tab, 1 menit)
+
+  1. Buka simulator.html → klik Hubungkan.
+  2. Buka index.html → Pengaturan → aktifkan "Mode realtime (MQTT)" (biarkan broker default
+     wss://broker.emqx.io:8084/mqtt dan ID demo-01).
+  3. Kembali ke Overview → kartu status berubah jadi Online, stok mengikuti nilai simulator.
+  4. Tekan Beri Pakan Sekarang → konfirmasi → dashboard kirim cmd → simulator "menimbang" 2 detik → kirim event →
+     dashboard mencatatnya ke Histori + toast.
+
+  Coba juga: tombol Offline di simulator (dashboard langsung tampil banner offline + tombol aksi nonaktif), dan Stop
+  Darurat di dialog progres.
+
+  Protokol topik (sesuai PRD, sudah dipakai dua arah)
+
+  ┌───────────────────────┬─────────────────────┬───────────────────────────────────────────────────────────────────┐
+  │         Topik         │        Arah         │                                Isi                                │
+  ├───────────────────────┼─────────────────────┼───────────────────────────────────────────────────────────────────┤
+  │ feeder/{id}/status    │ ESP32→web           │ {online, weight_kg, motor, rssi, ts}                              │
+  │                       │ (retained)          │                                                                   │
+  ├───────────────────────┼─────────────────────┼───────────────────────────────────────────────────────────────────┤
+  │ feeder/{id}/event     │ ESP32→web           │ {id, ts, mode, target, actual, status, duration, stock_after,     │
+  │                       │                     │ samples}                                                          │
+  ├───────────────────────┼─────────────────────┼───────────────────────────────────────────────────────────────────┤
+  │ feeder/{id}/cmd       │ web→ESP32           │ {id, cmd, weight, …}                                              │
+  ├───────────────────────┼─────────────────────┼───────────────────────────────────────────────────────────────────┤
+  │ feeder/{id}/cmd/reply │ ESP32→web           │ {id, ok, message}                                                 │
+  ├───────────────────────┼─────────────────────┼───────────────────────────────────────────────────────────────────┤
+  │ feeder/{id}/schedule  │ dua arah (retained) │ array jadwal                                                      │
+  └───────────────────────┴─────────────────────┴───────────────────────────────────────────────────────────────────┘
+
+  id unik dipakai untuk mencocokkan perintah ↔ balasan ↔ event (anti dobel, sesuai PRD).
+
+  Catatan / batasan fase 1
+
+  - Mode MQTT butuh internet (CDN MQTT.js + broker). Tanpa internet, dashboard otomatis jatuh ke simulasi lokal — aman.
+  - Saat mode MQTT aktif tapi simulator/ESP32 belum nyala, dashboard menampilkan offline — itu perilaku yang benar
+    (device belum "announce").
+  - Di simulator, Stop Darurat mengirim perintah stop tapi feed yang sedang berjalan tetap tuntas (simplifikasi); di
+    ESP32 asli, stop benar-benar mematikan motor.
+
+  Langkah berikutnya (kalau mau lanjut)
+
+  - Saya tuliskan kode firmware Arduino/ESP32 (PubSubClient): publish status, subscribe cmd, Last Will, simpan jadwal di
+    EEPROM/Flash — tinggal ganti simulator.html.
+  - Atau pasang Supabase untuk login + histori yang benar-benar tersimpan di cloud.
+
+  Mau saya lanjut ke kode firmware ESP32-nya?

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FishFeed · Monitoring &amp; Kontrol Pakan Ikan</title>
+<meta name="description" content="FishFeed — dashboard monitoring dan kontrol pemberian pakan ikan otomatis dari jarak jauh.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- scrim untuk drawer mobile -->
+<div class="scrim" id="scrim" hidden></div>
+
+<!-- Layar login (gate client-side — bukan keamanan beneran) -->
+<div class="login" id="login">
+  <div class="login-card">
+    <div class="login-mark" aria-hidden="true"><span class="material-symbols-rounded">set_meal</span></div>
+    <div class="login-head">
+      <div class="login-title">Fish<span>Feed</span></div>
+      <p class="login-sub">Masuk untuk mengakses dashboard</p>
+    </div>
+    <form id="loginForm" novalidate>
+      <label class="field">
+        <span>Username</span>
+        <input id="loginUser" type="text" autocomplete="username" placeholder="Username kelompok" required>
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••" required>
+      </label>
+      <p class="login-err" id="loginErr" hidden>Username atau password salah.</p>
+      <button class="btn primary block" type="submit">Masuk</button>
+    </form>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"><span class="material-symbols-rounded">set_meal</span></div>
+      <div class="brand-text">
+        <span class="brand-name">Fish<span>Feed</span></span>
+        <span class="brand-sub">Smart Feeder</span>
+      </div>
+    </div>
+
+    <nav class="nav" id="nav" aria-label="Navigasi utama">
+      <a href="#overview" data-view="overview" class="active">
+        <span class="material-symbols-rounded">dashboard</span><span class="nav-label">Overview</span>
+      </a>
+      <a href="#jadwal" data-view="jadwal">
+        <span class="material-symbols-rounded">calendar_clock</span><span class="nav-label">Jadwal Pakan</span>
+      </a>
+      <a href="#histori" data-view="histori">
+        <span class="material-symbols-rounded">monitoring</span><span class="nav-label">Histori</span>
+      </a>
+      <a href="#cli" data-view="cli">
+        <span class="material-symbols-rounded">terminal</span><span class="nav-label">Web-CLI</span>
+      </a>
+      <a href="#pengaturan" data-view="pengaturan">
+        <span class="material-symbols-rounded">settings</span><span class="nav-label">Pengaturan</span>
+      </a>
+    </nav>
+
+    <!-- Kartu status perangkat (dirender JS) -->
+    <div class="device-card" id="deviceCard"></div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+
+    <header class="topbar">
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Buka menu">
+        <span class="material-symbols-rounded">menu</span>
+      </button>
+
+      <div class="page-head">
+        <span class="crumb" id="crumb">MONITORING &amp; KONTROL</span>
+        <h1 id="pageTitle">Overview</h1>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="cmd-trigger" id="cmdTrigger" aria-label="Buka command palette">
+          <span class="material-symbols-rounded">search</span>
+          <span class="cmd-label">Cari / perintah…</span>
+          <kbd>Ctrl K</kbd>
+        </button>
+
+        <button class="icon-btn" id="themeBtn" aria-label="Ganti tema" title="Ganti tema">
+          <span class="material-symbols-rounded">light_mode</span>
+        </button>
+
+        <!-- Notifikasi -->
+        <div class="dropdown" id="notifDropdown">
+          <button class="icon-btn" id="notifBtn" aria-label="Notifikasi">
+            <span class="material-symbols-rounded">notifications</span>
+            <span class="badge-dot" id="notifBadge" hidden></span>
+          </button>
+          <div class="menu" role="menu">
+            <div class="menu-head">
+              <div><strong>Notifikasi</strong><small id="notifCount"></small></div>
+              <button class="link-btn" data-act="read-all">Tandai dibaca</button>
+            </div>
+            <div class="menu-list" id="notifList"></div>
+          </div>
+        </div>
+
+        <!-- Profil -->
+        <div class="dropdown" id="profileDropdown">
+          <button class="profile-btn" id="profileBtn" aria-label="Menu akun">
+            <span class="avatar"><span class="material-symbols-rounded">person</span></span>
+            <span class="profile-meta"><strong id="profileName">Peternak</strong><small id="profileFarm">Fish Farm</small></span>
+            <span class="material-symbols-rounded chev">expand_more</span>
+          </button>
+          <div class="menu" role="menu">
+            <div class="menu-user">
+              <span class="avatar"><span class="material-symbols-rounded">person</span></span>
+              <div><strong id="ddName">Peternak</strong><small id="ddFarm">Fish Farm</small></div>
+            </div>
+            <button class="menu-item" data-act="profile"><span class="material-symbols-rounded">account_circle</span>Profil saya</button>
+            <button class="menu-item" data-act="go" data-v="pengaturan"><span class="material-symbols-rounded">settings</span>Pengaturan</button>
+            <button class="menu-item" data-act="help"><span class="material-symbols-rounded">help</span>Bantuan</button>
+            <div class="menu-sep"></div>
+            <button class="menu-item danger" data-act="logout"><span class="material-symbols-rounded">logout</span>Keluar</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Banner perangkat offline -->
+    <div class="banner offline" id="offlineBanner" hidden>
+      <span class="material-symbols-rounded">cloud_off</span>
+      <div class="banner-text">
+        <strong>Perangkat tidak terhubung</strong>
+        <span>Menampilkan data terakhir. Perintah akan tersedia kembali saat ESP32 online.</span>
+      </div>
+      <button class="btn sm" data-act="go" data-v="pengaturan">Periksa koneksi</button>
+    </div>
+
+    <!-- Banner stok menipis (dirender JS) -->
+    <div class="banner warn" id="lowStockBanner" hidden></div>
+
+    <!-- Kontainer halaman -->
+    <div class="views">
+      <section class="view" id="view-overview"></section>
+      <section class="view" id="view-jadwal"></section>
+      <section class="view" id="view-histori"></section>
+      <section class="view" id="view-cli"></section>
+      <section class="view" id="view-pengaturan"></section>
+    </div>
+  </main>
+
+  <!-- ============ RIGHT PANEL ============ -->
+  <aside class="right-panel" id="rightPanel">
+    <section class="r-section" id="farmProfileSection"></section>
+    <section class="r-section" id="tipSection"></section>
+    <section class="r-section" id="healthSection"></section>
+  </aside>
+</div>
+
+<!-- ============ OVERLAY ROOTS ============ -->
+<div id="modalRoot"></div>
+<div id="toastRoot" class="toast-root" aria-live="polite"></div>
+<div id="sheetRoot"></div>
+
+<!-- Command palette -->
+<div class="palette-backdrop" id="paletteBackdrop" hidden>
+  <div class="palette" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div class="palette-input">
+      <span class="material-symbols-rounded">search</span>
+      <input id="paletteInput" type="text" placeholder="Ketik perintah atau cari halaman…" autocomplete="off" spellcheck="false">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="palette-list" id="paletteList"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
